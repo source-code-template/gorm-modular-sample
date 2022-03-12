@@ -6,11 +6,10 @@ import (
 	"github.com/core-go/config"
 	"github.com/core-go/log"
 	mid "github.com/core-go/log/middleware"
-	"github.com/core-go/log/strings"
 	sv "github.com/core-go/service"
 	"github.com/gorilla/mux"
+
 	"go-service/internal/app"
-	"net/http"
 )
 
 func main() {
@@ -23,9 +22,7 @@ func main() {
 	r := mux.NewRouter()
 
 	log.Initialize(conf.Log)
-	r.Use(func(handler http.Handler) http.Handler {
-		return mid.BuildContextWithMask(handler, MaskLog)
-	})
+	r.Use(mid.BuildContext)
 	logger := mid.NewLogger()
 	if log.IsInfoEnable() {
 		r.Use(mid.Logger(conf.MiddleWare, log.InfoFields, logger))
@@ -41,8 +38,4 @@ func main() {
 	if er3 := server.ListenAndServe(); er3 != nil {
 		fmt.Println(er3.Error())
 	}
-}
-
-func MaskLog(name, s string) string {
-	return strings.Mask(s, 1, 6, "x")
 }

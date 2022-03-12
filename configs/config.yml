@@ -8,7 +8,6 @@ sql:
 
 log:
   level: info
-  fields: app,service,username
   map:
     time: "@timestamp"
     msg: message
@@ -19,34 +18,3 @@ middleware:
   request: request
   response: response
   size: size
-  masks: username
-  constants:
-    app: "backoffice"
-    service: back-office
-  map:
-    username: username
-
-client:
-  endpoint:
-    url: "http://localhost:8080/users"
-    timeout: 1s
-  log:
-    log: true
-    size: size
-    status: status
-    request: request
-    response: response
-
-status:
-  not_found: 0
-  duplicate_key: 0
-  success: 1
-  version_error: 2
-  validation_error: 4
-  error: 4
-
-action:
-  create: create
-  update: update
-  patch: patch
-  delete: delete

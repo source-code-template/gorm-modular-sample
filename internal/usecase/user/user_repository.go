@@ -2,10 +2,9 @@ package user
 
 import (
 	"context"
-	"reflect"
-
 	q "github.com/core-go/sql"
 	"gorm.io/gorm"
+	"reflect"
 )
 
 type UserRepository interface {
