@@ -18,3 +18,17 @@ middleware:
   request: request
   response: response
   size: size
+
+status:
+  not_found: 0
+  duplicate_key: 0
+  success: 1
+  version_error: 2
+  validation_error: 4
+  error: 4
+
+action:
+  create: create
+  update: update
+  patch: patch
+  delete: delete

@@ -9,7 +9,7 @@ go run main.go
 ![Architecture](https://camo.githubusercontent.com/51415f43a296dfd2fce1beabef6cbc58a57c942ad75e2c286aed076f11757974/68747470733a2f2f63646e2d696d616765732d312e6d656469756d2e636f6d2f6d61782f3830302f312a4d306c4f32464a2d3877565067592d594d57396c75512e706e67)
 
 #### Architecture with standard features: config, health check, logging, middleware log tracing
-![Architecture](https://camo.githubusercontent.com/bd77867d332213b6d54d80b19f46c3dd0f1b8e0b9bb155f8ff502d9fc3bdcded/68747470733a2f2f63646e2d696d616765732d312e6d656469756d2e636f6d2f6d61782f3830302f312a476d306479704c7559615077474d38557a727a5637772e706e67)
+![Architecture](https://camo.githubusercontent.com/380ff8117dfbd6d032210c2c5bd797454d84ccd768a075015a9392d858c85041/68747470733a2f2f63646e2d696d616765732d312e6d656469756d2e636f6d2f6d61782f3830302f312a6a5156653852537a78525a4951417a346a71596270512e706e67)
 
 #### [core-go/search](https://github.com/core-go/search)
 - Build the search model at http handler
@@ -140,9 +140,46 @@ GET /users/wolverine
     "dateOfBirth": "1974-11-16T16:59:59.999Z"
 }
 ```
-#### *Response:* 1: success, 0: duplicate key, -1: error
+#### *Response:*
+- status: can be configurable; 1: success, 0: duplicate key, 4: error
 ```json
-1
+{
+    "status": 1,
+    "value": {
+        "id": "wolverine",
+        "username": "james.howlett",
+        "email": "james.howlett@gmail.com",
+        "phone": "0987654321",
+        "dateOfBirth": "1974-11-16T00:00:00+07:00"
+    }
+}
+```
+#### *Fail case sample:* 
+- Request:
+```json
+{
+    "id": "wolverine",
+    "username": "james.howlett",
+    "email": "james.howlett",
+    "phone": "0987654321a",
+    "dateOfBirth": "1974-11-16T16:59:59.999Z"
+}
+```
+- Response: in this below sample, email and phone are not valid
+```json
+{
+    "status": 4,
+    "errors": [
+        {
+            "field": "email",
+            "code": "email"
+        },
+        {
+            "field": "phone",
+            "code": "phone"
+        }
+    ]
+}
 ```
 
 ### Update one user by id
@@ -158,9 +195,52 @@ PUT /users/wolverine
     "dateOfBirth": "1974-11-16T16:59:59.999Z"
 }
 ```
-#### *Response:* 1: success, 0: not found, -1: error
+#### *Response:*
+- status: can be configurable; 1: success, 0: duplicate key, 2: version error, 4: error
 ```json
-1
+{
+    "status": 1,
+    "value": {
+        "id": "wolverine",
+        "username": "james.howlett",
+        "email": "james.howlett@gmail.com",
+        "phone": "0987654321",
+        "dateOfBirth": "1974-11-16T00:00:00+07:00"
+    }
+}
+```
+
+#### Problems for patch
+If we pass a struct as a parameter, we cannot control what fields we need to update. So, we must pass a map as a parameter.
+```go
+type UserService interface {
+    Update(ctx context.Context, user *User) (int64, error)
+    Patch(ctx context.Context, user map[string]interface{}) (int64, error)
+}
+```
+We must solve 2 problems:
+1. At http handler layer, we must convert the user struct to map, with json format, and make sure the nested data types are passed correctly.
+2. At service layer or repository layer, from json format, we must convert the json format to database format (in this case, we must convert to bson of Mongo)
+
+#### Solutions for patch  
+1. At http handler layer, we use [core-go/service](https://github.com/core-go/service), to convert the user struct to map, to make sure we just update the fields we need to update
+```go
+import server "github.com/core-go/service"
+
+func (h *UserHandler) Patch(w http.ResponseWriter, r *http.Request) {
+    var user User
+    userType := reflect.TypeOf(user)
+    _, jsonMap := sv.BuildMapField(userType)
+    body, _ := sv.BuildMapAndStruct(r, &user)
+    json, er1 := sv.BodyToJson(r, user, body, ids, jsonMap, nil)
+
+    result, er2 := h.service.Patch(r.Context(), json)
+    if er2 != nil {
+        http.Error(w, er2.Error(), http.StatusInternalServerError)
+        return
+    }
+    respond(w, result)
+}
 ```
 
 ### Delete a new user by id

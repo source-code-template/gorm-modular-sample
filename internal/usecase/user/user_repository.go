@@ -17,11 +17,14 @@ type UserRepository interface {
 }
 
 func NewUserRepository(db *gorm.DB) UserRepository {
-	return &userRepository{DB: db}
+	userType := reflect.TypeOf(User{})
+	jsonColumnMap := q.MakeJsonColumnMap(userType)
+	return &userRepository{DB: db, jsonColumnMap: jsonColumnMap}
 }
 
 type userRepository struct {
-	DB *gorm.DB
+	DB            *gorm.DB
+	jsonColumnMap map[string]string
 }
 
 func (r *userRepository) All(ctx context.Context) (*[]User, error) {
@@ -47,9 +50,7 @@ func (r *userRepository) Update(ctx context.Context, user *User) (int64, error) 
 }
 
 func (r *userRepository) Patch(ctx context.Context, user map[string]interface{}) (int64, error) {
-	userType := reflect.TypeOf(User{})
-	jsonColumnMap := q.MakeJsonColumnMap(userType)
-	colMap := q.JSONToColumns(user, jsonColumnMap)
+	colMap := q.JSONToColumns(user, r.jsonColumnMap)
 	var userModel User
 	res := r.DB.Model(&userModel).Where("id = ?", user["id"]).Updates(colMap)
 	return res.RowsAffected, nil
