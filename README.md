@@ -5,6 +5,66 @@
 go run main.go
 ```
 
+## Architecture
+![Architecture](https://camo.githubusercontent.com/51415f43a296dfd2fce1beabef6cbc58a57c942ad75e2c286aed076f11757974/68747470733a2f2f63646e2d696d616765732d312e6d656469756d2e636f6d2f6d61782f3830302f312a4d306c4f32464a2d3877565067592d594d57396c75512e706e67)
+
+#### Architecture with standard features: config, health check, logging, middleware log tracing
+![Architecture](https://camo.githubusercontent.com/bd77867d332213b6d54d80b19f46c3dd0f1b8e0b9bb155f8ff502d9fc3bdcded/68747470733a2f2f63646e2d696d616765732d312e6d656469756d2e636f6d2f6d61782f3830302f312a476d306479704c7559615077474d38557a727a5637772e706e67)
+
+#### [core-go/search](https://github.com/core-go/search)
+- Build the search model at http handler
+- Build dynamic SQL for search
+  - Build SQL for paging by page index (page) and page size (limit)
+  - Build SQL to count total of records
+
+#### validator at [core-go/service](https://github.com/core-go/service)
+- Check required, email, url, min, max, enum, regular expression
+- Check phone number with country code
+### Search users: Support both GET and POST 
+#### POST /users/search
+##### *Request:* POST /users/search
+In the below sample, search users with these criteria:
+- get users of page "1", with page size "20"
+- email="tony": get users with email starting with "tony"
+- dateOfBirth between "min" and "max" (between 1953-11-16 and 1976-11-16)
+- sort by phone ascending, id descending
+```json
+{
+    "page": 1,
+    "limit": 20,
+    "sort": "phone,-id",
+    "email": "tony",
+    "dateOfBirth": {
+        "min": "1953-11-16T00:00:00+07:00",
+        "max": "1976-11-16T00:00:00+07:00"
+    }
+}
+```
+##### GET /users/search?page=1&limit=2&email=tony&dateOfBirth.min=1953-11-16T00:00:00+07:00&dateOfBirth.max=1976-11-16T00:00:00+07:00&sort=phone,-id
+In this sample, search users with these criteria:
+- get users of page "1", with page size "20"
+- email="tony": get users with email starting with "tony"
+- dateOfBirth between "min" and "max" (between 1953-11-16 and 1976-11-16)
+- sort by phone ascending, id descending
+
+#### *Response:*
+- total: total of users, which is used to calculate numbers of pages at client 
+- list: list of users
+```json
+{
+    "list": [
+        {
+            "id": "ironman",
+            "username": "tony.stark",
+            "email": "tony.stark@gmail.com",
+            "phone": "0987654321",
+            "dateOfBirth": "1963-03-24T17:00:00Z"
+        }
+    ],
+    "total": 1
+}
+```
+
 ## API Design
 ### Common HTTP methods
 - GET: retrieve a representation of the resource

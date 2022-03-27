@@ -11,8 +11,8 @@ import (
 )
 
 type UserHandler interface {
-	All(w http.ResponseWriter, r *http.Request)
 	Search(w http.ResponseWriter, r *http.Request)
+	All(w http.ResponseWriter, r *http.Request)
 	Load(w http.ResponseWriter, r *http.Request)
 	Create(w http.ResponseWriter, r *http.Request)
 	Update(w http.ResponseWriter, r *http.Request)
@@ -40,7 +40,6 @@ func (h *userHandler) All(w http.ResponseWriter, r *http.Request) {
 	}
 	JSON(w, http.StatusOK, users)
 }
-
 func (h *userHandler) Load(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	if len(id) == 0 {
